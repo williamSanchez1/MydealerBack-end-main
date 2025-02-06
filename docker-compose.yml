@@ -1,0 +1,53 @@
+services:
+  composer:
+    container_name: mydealer-composer
+    build:
+      dockerfile: ./Dockerfile
+      target: builder
+      args:
+        - name=${USER}
+        - password=mydealer
+        - permissions=sudo
+    image: mydealer/backend
+    user: ${USER}
+    command: >
+      sh -c "bash ./scripts/laravel-installer.sh"
+    volumes:
+      - ./:/code
+ 
+  server:
+    container_name: mydealer-server
+    image: mydealer/backend
+    user: ${USER}
+    ports:
+      - 8000:8000
+    depends_on:
+      composer:
+        condition: service_completed_successfully
+    volumes:
+      - ./:/code
+      - ./:/workspace:cached
+    # extra_hosts:
+    #   - 'host.docker.internal:host-gateway'
+    command: php artisan serve --host 0.0.0.0
+ 
+ 
+ 
+  app:
+    image: mydealer/backend  # o la imagen que utilices para tu proyecto
+    container_name: app_container
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"  # Ajusta según el puerto de tu aplicación
+    networks:
+      - app_network
+    environment:
+      - DB_HOST=host.docker.internal  # Este es un host especial para acceder a la máquina anfitriona desde Docker
+      - DB_PORT=3306  # El puerto MySQL de XAMPP
+      - DB_USER=root  # Ajusta según la configuración de tu base de datos
+      - DB_PASSWORD= # Contraseña de la base de datos, si la tienes configurada
+ 
+networks:
+  app_network:
+    driver: bridge
